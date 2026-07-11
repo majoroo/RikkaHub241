@@ -1,0 +1,65 @@
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+.cursor
+.history
+.kotlin
+
+# 原生二进制库
+*.so
+*.jar
+*.aar
+*.dex
+
+# 字体文件
+*.ttf
+*.otf
+*.woff
+*.woff2
+
+# 栅格图片（保留 SVG 矢量图）
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.ico
+*.icns
+*.bmp
+*.webp
+
+# 锁文件（非代码）
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+uv.lock
+bun.lock
+bun.lockb
+
+# 生成的性能分析文件
+**/baseline-prof.txt
+**/startup-prof.txt
+
+# 文档图片
+docs/img/
+docs/donate.png
+docs/icon.png
+
+# Gradle wrapper jar
+**/gradle-wrapper.jar
+
+# Vineflower jar
+**/vineflower.jar
+
+# 词典数据文件（非代码）
+**/simple_dict/
+**/emoji/*.min.json
+
+# GitHub Actions workflows
+.github/workflows/
