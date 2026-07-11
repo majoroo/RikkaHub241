@@ -752,6 +752,7 @@ internal val DEFAULT_ASSISTANTS = listOf(
             你应当根据用户的喜好自行调整，并告知优劣势。
         """.trimIndent()
     ),
+    /*
     Assistant(
         id = Uuid.parse("3d47790c-c415-4b90-9388-751128adb0a0"),
         name = "",
@@ -771,6 +772,7 @@ internal val DEFAULT_ASSISTANTS = listOf(
             - Remember to use Markdown syntax for formatting, and use latex for mathematical expressions.
         """.trimIndent()
     ),
+    */
 )
 
 val DEFAULT_SYSTEM_TTS_ID = Uuid.parse("026a01a2-c3a0-4fd5-8075-80e03bdef200")
