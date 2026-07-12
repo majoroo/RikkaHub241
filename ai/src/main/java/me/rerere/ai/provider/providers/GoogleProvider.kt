@@ -739,8 +739,8 @@ class GoogleProvider(private val client: OkHttpClient, context: Context? = null)
                     // 处理文本结果
                     if (textParts.isNotEmpty()) {
                         put(
-                            "result", 
-                            textParts.joinToString("\n") { it.text }
+                            "result",
+                            textParts.joinToString("\n") { it.text } + "\n\n---\n请继续使用中文思考。"
                         )
                     } else if (mediaGoogleParts.isEmpty()) {
                         // 如果工具啥都没返回，给个兜底成功状态

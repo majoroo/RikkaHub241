@@ -100,28 +100,35 @@ fun generateColorScheme(dark: Boolean): ColorScheme {
 
 **改动位置**: `generateInternal()` 方法，`internalMessages` 组装之前。
 
-**原理**: 多步 Agent 循环中，过往轮次的工具调用记录（`UIMessagePart.Tool`）和思维链（`UIMessagePart.Reasoning`）会随消息历史一起送入 LLM，导致：
+**原理**: 多步 Agent 循环中，过往轮次的工具调用记录（`UIMessagePart.Tool`）和思维链（`UIMessagePart.Reasoning`）随消息历史送入 LLM 导致：
 - Token 被大量无用信息消耗
-- 上下文快速膨胀llm抓不住会话重点
+- 上下文快速膨胀，LLM 抓不住会话重点
 - LLM 行为受到工具调用历史污染（表征漂移/流口水）
 
-**过滤逻辑**:
+**过滤逻辑**: 过往消息中的 Tool 和 Reasoning part 不直接丢弃，也不保留原始 JSON，而是压缩为一段中文调用链：
 
 ```kotlin
-val cleanMessages = buildList {
-    // 过往消息：剥离 Tool 和 Reasoning part
-    val historical = messages.dropLast(1).map { msg ->
-        msg.copy(parts = msg.parts.filter { 
-            it !is UIMessagePart.Tool && it !is UIMessagePart.Reasoning 
-        })
-    }
-    addAll(historical)
-    // 当前消息：保留全部 part（多步 Agent 循环需要读取 tool 调用/结果）
-    messages.lastOrNull()?.let { add(it) }
-}
+// 工具名 → 中文简称映射
+private val TOOL_NAME_MAP = mapOf(
+    "workspace_write_file" to "写入",
+    "workspace_edit_file" to "编辑",
+    "workspace_read_file" to "读取",
+    "workspace_shell" to "运行",
+    "search_web" to "搜索",
+    "scrape_web" to "抓取",
+    "eval_javascript" to "计算",
+    "recent_chats" to "查阅",
+    "conversation_search" to "查询",
+    "memory_tool" to "记忆",
+)
+
+// 调用链格式：步间嵌入"思考"，末尾锚定"输出正文"
+// [写入,编辑,读取] → 思考→写入→思考→编辑→思考→读取→思考→输出正文
 ```
 
-**影响**: 过往消息只剩纯对话文本，Token 节约约 70-90%（取决于 Reasoning 长度）。当前轮次的 Agent 循环不受影响。实际使用为单条消息在接入Deekpeekv4flash的情况下仅仅使用1-2分钱，1元起码可以玩50次
+未在映射表中的工具名会原样输出，保证扩展性。
+
+**影响**: 过往消息只剩纯对话文本 + 轻量调用链。原始 71 条工具记录从 3.9KB 压缩至约 240 字节。当前轮次的 Agent 循环不受影响。
 
 ---
 
@@ -135,29 +142,63 @@ val cleanMessages = buildList {
 - `/skills` 技能目录说明（角色扮演不需要）
 - `/upload` 用户上传文件说明（无用）
 - `cwd` 当前工作目录说明（RP 不需要文件导航）
-- 图片文件支持提示（`workspace_read_file` description 中去除）
 
 **新增的内容**:
 - 明确 `/workspace` 为"输出正文前的临时编辑工作目录"
 - 引导工作流程：`workspace_write_file` 覆写 → `workspace_edit_file` 修改 → `workspace_read_file` 读取输出
 - 每轮开始自动清理旧内容（覆写即清空，无需额外步骤）
 
-**中文化**: 描述性文本改为中文，技术名词（工具名、路径格式、proot、rootfs）保留英文。防止llm频繁进入英文思考（进入英文思考不会导致输出异常和工作流异常，但是影响使用体验）
+**中文化**: 描述性文本改为中文，技术名词（工具名、路径格式、proot、rootfs）保留英文。防止 LLM 频繁进入英文思考。
 
 ---
 
-### 2.3 Release 签名配置
+### 2.3 Workspace 工具 description 中文化
 
-**文件**: `local.properties`
+**文件**: `app/src/main/java/me/rerere/rikkahub/data/ai/tools/WorkspaceTools.kt`
 
-```properties
-storeFile=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX(脱敏)
-storePassword=android
-keyAlias=androiddebugkey
-keyPassword=android
+4 个 workspace 工具的 `description` 从英文改为中文，技术关键词保留英文：
+
+```
+workspace_read_file:  读取文件内容，支持 UTF-8 文本文件。
+workspace_write_file: 写入 UTF-8 文本文件，覆盖已有文件。
+workspace_edit_file:  编辑 UTF-8 文本文件，对文件内容做精确替换。
+workspace_shell:      执行 shell 命令。
 ```
 
-使用 Android Debug 证书签名 Release APK，方便本地安装测试。
+**目的**: 降低 LLM 在工具调用过程中因读取英文 description 而切换到英文思维链的概率。
+
+---
+
+### 2.4 工具结果中文思考锚定
+
+**问题定位**: 多轮工具调用场景下，LLM 在读取 tool result 返回的 JSON（含 `tool_call_id`、函数名、`sizeBytes` 等技术字段）后，思考语言从中文跳转为英文。
+
+**方案**: 在 tool result content 末尾追加一段中文语境引导，紧贴在 JSON 之后、下一次 reasoning 开始之前：
+
+```kotlin
+"\n\n---\n请继续使用中文思考。"
+```
+
+**改动文件**（4 个 Provider，各 1-3 行）:
+
+| Provider | 文件 | 改动 |
+|---|---|---|
+| Claude (Anthropic) | `ClaudeProvider.kt:515` | content 数组末尾追加 text block |
+| OpenAI ChatCompletions | `ChatCompletionsAPI.kt:668,701` | JsonPrimitive 末尾拼接；JsonArray 末尾追加 |
+| OpenAI Responses | `ResponseAPI.kt:389-399` | output 数组/字符串末尾追加 |
+| Google | `GoogleProvider.kt:743` | response.result 字符串末尾拼接 |
+
+**验证结果**: 连续测试上百次工具调用，thinking 语言 100% 保持中文。
+
+---
+
+### 2.5 默认助手更名
+
+**文件**: `app/src/main/res/values-zh/strings.xml`
+
+```
+"默认助手" → "应用使用引导助手"
+```
 
 ---
 
@@ -167,9 +208,11 @@ keyPassword=android
 |---|---|---|
 | 编译 Debug APK | ✅ 通过 | |
 | 编译 Release APK | ✅ 通过 | |
-| 双通道上下文过滤 | ✅ 生效 | 过往消息剥离 Tool + Reasoning |
+| 双通道上下文过滤 | ✅ 生效 | 历史 Tool/Reasoning 压缩为中文调用链 |
+| 工具结果中文锚定 | ✅ 生效 | 四 Provider 各 1-3 行，百次测试零偏离 |
 | Workspace 提示词 | ✅ 生效 | 中文 + 工作流引导 |
+| 工具 description | ✅ 生效 | workspace 4 工具中文描述 |
 | 自定义主题色 | ✅ 正常 | HSV 近似方案 |
-| AWS 工具调用 | ✅ 正常 | 经用户测试验证 |
-| Web 管理界面 | ❌ 不可用 | pnpm 构建被跳过 |（启用该功能会在本地网络暴露一个web页面以供访问使用，但是个人rp客户端用不到）
-| Firebase 分析/崩溃收集 | ❌ 不可用 | 占位配置 |（国内环境开了也没用）
+| Workspace 工具调用 | ✅ 正常 | 经用户测试验证 |
+| Web 管理界面 | ❌ 不可用 | pnpm 构建被跳过 |
+| Firebase 分析/崩溃收集 | ❌ 不可用 | 占位配置（国内环境不可用） |

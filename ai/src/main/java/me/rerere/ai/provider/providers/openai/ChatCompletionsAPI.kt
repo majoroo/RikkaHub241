@@ -658,13 +658,15 @@ class ChatCompletionsAPI(
         val supportsImageInput = Modality.IMAGE in supportInputModalities
         val hasImageToSend = output.any { it is UIMessagePart.Image && supportsImageInput }
         return if (!hasImageToSend) {
-            JsonPrimitive(output.mapNotNull { part ->
-                when (part) {
-                    is UIMessagePart.Text -> part.text
-                    is UIMessagePart.Image -> "[Image output omitted: current model does not support image input]"
-                    else -> null
-                }
-            }.joinToString("\n"))
+            JsonPrimitive(
+                output.mapNotNull { part ->
+                    when (part) {
+                        is UIMessagePart.Text -> part.text
+                        is UIMessagePart.Image -> "[Image output omitted: current model does not support image input]"
+                        else -> null
+                    }
+                }.joinToString("\n") + "\n\n---\n请继续使用中文思考。"
+            )
         } else {
             buildJsonArray {
                 output.forEach { part ->
@@ -696,6 +698,10 @@ class ChatCompletionsAPI(
                         else -> {}
                     }
                 }
+                add(buildJsonObject {
+                    put("type", "text")
+                    put("text", "\n\n---\n请继续使用中文思考。")
+                })
             }
         }
     }

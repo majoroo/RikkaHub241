@@ -22,28 +22,15 @@ fun createSearchTools(settings: Settings): Set<Tool> {
             Tool(
                 name = "search_web",
                 description = """
-                    Search the web for up-to-date or specific information.
-                    Use this when the user asks for the latest news, current facts, or needs verification.
-                    Generate focused keywords and run multiple searches if needed.
-                    Today is ${LocalDate.now().toLocalString(true)}.
+                    搜索互联网以获取最新或特定信息。
+                    当需要对角色扮演中的草稿内容进行专业的事实校对或需要验证时使用此工具。
+                    生成精准的关键词，必要时执行多次搜索。
 
-                    Response format:
-                    - items[].id (short id), title, url, text
-                    - images[]: image urls related to the query (may be empty)
+                    响应格式：
+                    - items[].id (短ID), title, url, text
 
-                    Citations:
-                    - After using results, add `[citation,domain](id)` after the sentence.
-                    - Multiple citations are allowed.
-                    - If no results are cited, omit citations.
-
-                    Images:
-                    - When images help the user understand the answer, embed relevant ones using Markdown: `![](url)`.
-                    - Embed 2 to 4 images, and only use urls from `images[]` (never fabricate or alter urls).
-                    - Usually place the images at the very beginning of your reply; skip them entirely if none are relevant.
-
-                    Example:
-                    The capital of France is Paris. [citation,example.com](abc123)
-                    The population is about 2.1 million. [citation,example.com](abc123) [citation,example2.com](def456)
+                    引用格式：
+                    - 如在角色扮演中无需引用链接，内化信息后作为草稿的输出融合
                     """.trimIndent(),
                 parameters = {
                     val options = settings.searchServices.getOrElse(
@@ -88,9 +75,9 @@ fun createSearchTools(settings: Settings): Set<Tool> {
                 Tool(
                     name = "scrape_web",
                     description = """
-                        Scrape a URL for detailed page content.
-                        Use this when the user requests content from a specific page or when search snippets are insufficient.
-                        Avoid using it for common questions unless the user asks.
+                        抓取指定 URL 的完整页面内容。
+                        对于常见问题，优先使用search_web。
+                        当扮演中需要及其聚焦某个专业场景时，或搜索结果摘要不足以修订草稿时使用scrape_web。
                         """.trimIndent(),
                     parameters = {
                         val options = settings.searchServices.getOrElse(

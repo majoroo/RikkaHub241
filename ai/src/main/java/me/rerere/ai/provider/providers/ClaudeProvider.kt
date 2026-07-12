@@ -514,6 +514,10 @@ class ClaudeProvider(private val client: OkHttpClient, context: Context? = null)
         put("tool_use_id", toolCallId)
         putJsonArray("content") {
             output.mapNotNull { it.toContentBlock() }.forEach { add(it) }
+            add(buildJsonObject {
+                put("type", "text")
+                put("text", "\n\n---\n请继续使用中文思考。")
+            })
         }
     }
 

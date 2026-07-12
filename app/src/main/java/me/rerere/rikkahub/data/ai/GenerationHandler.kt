@@ -55,6 +55,20 @@ private const val TAG = "GenerationHandler"
 private const val MAX_TOOL_OUTPUT_CHARS = 32 * 1024
 private const val TOOL_OUTPUT_PREVIEW_CHARS = 4 * 1024
 
+/** 工具名 → 中文简称映射，用于历史工具调用链的轻量摘要 */
+private val TOOL_NAME_MAP = mapOf(
+    "workspace_write_file" to "写入",
+    "workspace_edit_file" to "编辑",
+    "workspace_read_file" to "读取",
+    "workspace_shell" to "运行",
+    "search_web" to "搜索",
+    "scrape_web" to "抓取",
+    "eval_javascript" to "计算",
+    "recent_chats" to "查阅",
+    "conversation_search" to "查询",
+    "memory_tool" to "记忆",
+)
+
 @Serializable
 sealed interface GenerationChunk {
     data class Messages(
@@ -362,11 +376,33 @@ class GenerationHandler(
         workspaceCwd: String? = null,
     ) {
         val cleanMessages = buildList {
-            // 过往消息：剥离 Tool 和 Reasoning part
-            // 工具调用痕迹 → 已执行过的工具不参与后续推理
-            // 思维链痕迹 → 模型无需回顾自己的思考过程，聚焦故事推进
+            // 过往消息：Tool 和 Reasoning 不直接丢弃，而是压缩为文本摘要
+            // - 已执行的工具调用 → 保留一句话记录（如 "[工具: workspace_write_file → 成功]"）
+            // - 未执行的工具调用 → 丢弃（无关信息）
+            // - 思维链 → 丢弃（全文保留在最终回复的 Text 中）
             val historical = messages.dropLast(1).map { msg ->
-                msg.copy(parts = msg.parts.filter { it !is UIMessagePart.Tool && it !is UIMessagePart.Reasoning })
+                // 收集所有已执行工具的中文简称，形成调用链
+                val toolChain = msg.parts.filterIsInstance<UIMessagePart.Tool>()
+                    .filter { it.isExecuted }
+                    .map { TOOL_NAME_MAP[it.toolName] ?: it.toolName }
+                val chainSummary = if (toolChain.isNotEmpty()) {
+                    // 步间嵌入"思考"，末尾嵌入"输出正文"
+                    // [写入,编辑,读取] → [思考→写入→思考→编辑→思考→读取→思考→输出正文]
+                    val chainWithThinking = toolChain.flatMap { listOf("思考", it) } + listOf("思考", "输出正文")
+                    listOf(UIMessagePart.Text(chainWithThinking.joinToString("→")))
+                } else {
+                    emptyList()
+                }
+
+                val compressed = msg.parts.flatMap { part ->
+                    when (part) {
+                        is UIMessagePart.Tool -> emptyList()
+                        is UIMessagePart.Reasoning -> emptyList()
+                        else -> listOf(part)
+                    }
+                }
+                // 将工具链摘要插入到压缩后的 parts 最前面
+                msg.copy(parts = chainSummary + compressed)
             }
             addAll(historical)
             // 当前消息：保留全部 part（多步 Agent 循环需要读取 tool 调用/结果）

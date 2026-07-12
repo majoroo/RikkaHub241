@@ -27,10 +27,9 @@ fun createConversationTools(
     Tool(
         name = "recent_chats",
         description = """
-            List the user's recent conversations with you to understand their preferences and ongoing topics.
-            Returns conversation titles and the date of last activity, ordered by pinned first then most recently updated.
-            Use this when you need quick context about what the user has been discussing lately.
-            Only titles and dates are returned; use `conversation_search` to look up the actual content.
+            列出用户最近跨会话。返回对话标题和最后活动日期，按置顶优先、最近更新排序。
+            本工具是跨会话调取信息，如果没有明确的用户指令不应使用。
+            仅返回标题和日期；如需查看具体内容请使用 `conversation_search`。
         """.trimIndent(),
         parameters = {
             InputSchema.Obj(
@@ -66,9 +65,10 @@ fun createConversationTools(
     Tool(
         name = "conversation_search",
         description = """
-            Full-text search across the user's past conversations to recall specific information they mentioned before.
-            Use focused keywords. Run multiple searches with different keywords if needed.
-            Each result includes the conversation title, a snippet with matched keywords wrapped in [brackets], and the date.
+            对角色扮演的的过往对话进行全文搜索，以回忆、核实用户之前提到的特定信息。
+            使用精准关键词。如有必要，用不同关键词执行多次搜索。（作用域为跨会话，可能包含其他会话内容，请仔细分辨信息来源，尽量采信本次会话的回传）
+            每条结果包含会话标题、匹配关键词的片段（用 [brackets] 包裹）和日期。
+            如察觉到自我元认知（上下文）中的信息开始模糊，应当调用该工具。或者用户驱动的角色回复你，你再想想、你确定么、不对吧，等质疑你回复内容时也当调用conversation_search精准查询上下文。
         """.trimIndent(),
         parameters = {
             InputSchema.Obj(

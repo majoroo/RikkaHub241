@@ -71,7 +71,7 @@
   <string name="assistant_page_current_assistant">当前助手</string>
   <string name="assistant_page_custom_bodies">自定义 Body</string>
   <string name="assistant_page_custom_headers">自定义 Headers</string>
-  <string name="assistant_page_default_assistant">默认助手</string>
+  <string name="assistant_page_default_assistant">应用使用引导助手</string>
   <string name="assistant_page_delete">删除</string>
   <string name="assistant_page_delete_body">删除 Body</string>
   <string name="assistant_page_delete_dialog_text">确定要删除这个助手吗？此操作无法撤销。</string>
@@ -555,7 +555,7 @@
   <string name="safe_mode_copy">复制</string>
   <string name="safe_mode_crash_report">崩溃报告</string>
   <string name="safe_mode_current_assistant">当前助手：%s</string>
-  <string name="safe_mode_default_assistant">默认助手</string>
+  <string name="safe_mode_default_assistant">应用使用引导助手</string>
   <string name="safe_mode_description">应用上次启动时崩溃了。您可以切换到其他助手来解决此问题。</string>
   <string name="safe_mode_switch_assistant">切换助手</string>
   <string name="safe_mode_title">安全模式</string>

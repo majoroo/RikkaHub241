@@ -16,12 +16,13 @@ import me.rerere.ai.ui.UIMessagePart
 internal fun buildJavascriptTool(): Tool = Tool(
     name = "eval_javascript",
     description = """
-        Execute JavaScript code using QuickJS engine (ES2020).
-        The result is the value of the last expression in the code.
-        For calculations with decimals, use toFixed() to control precision.
-        Console output (log/info/warn/error) is captured and returned in 'logs' field.
-        No DOM or Node.js APIs available.
-        Example: '1 + 2' returns 3; 'const x = 5; x * 2' returns 10.
+        使用 QuickJS 引擎执行 JavaScript 代码（ES2020 标准）。
+        返回值为代码中最后一个表达式的执行结果。
+        涉及小数计算时，请使用 toFixed() 控制精度。
+        Console 输出（log/info/warn/error）会被捕获并返回在 'logs' 字段中。
+        不支持 DOM 和 Node.js API。
+        示例：'1 + 2' 返回 3；'const x = 5; x * 2' 返回 10。
+        角色扮演草稿中如果涉及到需要精准的计算的场景，应当调用此工具加以验证。
     """.trimIndent().replace("\n", " "),
     parameters = {
         InputSchema.Obj(

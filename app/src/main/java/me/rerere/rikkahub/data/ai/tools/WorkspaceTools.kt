@@ -65,9 +65,9 @@ private fun createReadFileTool(
 ) = Tool(
     name = "workspace_read_file",
     description = """
-        Read a file using the assistant's bound workspace Rootfs. Paths must be absolute inside Rootfs.
-        Use /workspace for the workspace files area.
-        Supports UTF-8 text files.
+        读取文件内容，支持 UTF-8 文本文件。
+        路径必须是 Rootfs 内的绝对路径。
+        工作区文件目录挂载在 /workspace。
     """.trimIndent().replace("\n", " "),
     parameters = {
         InputSchema.Obj(
@@ -103,8 +103,9 @@ private fun createWriteFileTool(
 ) = Tool(
     name = "workspace_write_file",
     description = """
-        Write a UTF-8 text file using the assistant's bound workspace Rootfs. Paths must be absolute inside Rootfs.
-        Use /workspace for the workspace files area.
+        写入 UTF-8 文本文件，覆盖已有文件。
+        路径必须是 Rootfs 内的绝对路径。
+        工作区文件目录挂载在 /workspace。
     """.trimIndent().replace("\n", " "),
     parameters = {
         InputSchema.Obj(
@@ -140,10 +141,12 @@ private fun createEditFileTool(
 ) = Tool(
     name = "workspace_edit_file",
     description = """
-        Edit a UTF-8 text file using the assistant's bound workspace Rootfs. Paths must be absolute inside Rootfs.
-        Use /workspace for the workspace files area.
-        Provide old_text and new_text. By default old_text must occur exactly once; set replace_all=true to replace every occurrence.
-        If no exact match is found, whitespace-tolerant line matching is attempted automatically.
+        编辑 UTF-8 文本文件，对文件内容做精确替换。
+        提供 old_text 和 new_text。
+        默认 old_text 必须恰好出现一次；设置 replace_all=true 可替换所有匹配项。
+        如果找不到精确匹配，会自动尝试容错行匹配。
+        路径必须是 Rootfs 内的绝对路径。
+        工作区文件目录挂载在 /workspace。
     """.trimIndent().replace("\n", " "),
     parameters = {
         InputSchema.Obj(
@@ -207,12 +210,12 @@ private fun createShellTool(
 ) = Tool(
     name = "workspace_shell",
     description = buildString {
-        append("Run a shell command in the assistant's bound workspace Rootfs. The workspace files area is mounted at /workspace. ")
-        append("Use cwd for a path relative to the workspace files root. ")
+        append("执行 shell 命令。工作区文件目录挂载在 /workspace。")
+        append("使用 cwd 指定相对于工作区文件根目录的路径。")
         if (!defaultCwd.isNullOrBlank()) {
-            append("Defaults to '$defaultCwd'. ")
+            append("默认: '$defaultCwd'。")
         }
-        append("Requires Rootfs to be installed and ready.")
+        append("需要 Rootfs 已就绪。")
     },
     parameters = {
         InputSchema.Obj(

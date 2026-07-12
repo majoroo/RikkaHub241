@@ -387,12 +387,16 @@ class ResponseAPI(
                                             else -> {}
                                         }
                                     }
+                                    add(buildJsonObject {
+                                        put("type", "input_text")
+                                        put("text", "---\n请继续使用中文思考。")
+                                    })
                                 }
                             } else {
                                 put(
                                     "output",
                                     tool.output.filterIsInstance<UIMessagePart.Text>()
-                                        .joinToString("\n") { it.text }
+                                        .joinToString("\n") { it.text } + "\n\n---\n请继续使用中文思考。"
                                 )
                             }
                         })
