@@ -36,7 +36,7 @@ val appModule = module {
     }
 
     single {
-        UpdateChecker(get())
+        UpdateChecker()
     }
 
     single {

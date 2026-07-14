@@ -265,7 +265,6 @@ class ChatCompletionsAPI(
                 "messages",
                 buildMessages(
                     messages = messages,
-                    includeHistoryReasoning = providerSetting.includeHistoryReasoning,
                     supportInputModalities = params.model.inputModalities,
                 )
             )
@@ -454,7 +453,6 @@ class ChatCompletionsAPI(
 
     private fun buildMessages(
         messages: List<UIMessage>,
-        includeHistoryReasoning: Boolean = true,
         supportInputModalities: List<Modality> = listOf(Modality.TEXT, Modality.IMAGE),
     ) = buildJsonArray {
         val filteredMessages = messages.filter { it.isValidToUpload() }
@@ -463,7 +461,7 @@ class ChatCompletionsAPI(
             if (message.role == MessageRole.ASSISTANT) {
                 addAssistantMessages(
                     message = message,
-                    includeReasoning = includeHistoryReasoning,
+                    includeReasoning = true,
                     supportInputModalities = supportInputModalities,
                 )
             } else {

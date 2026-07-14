@@ -41,15 +41,15 @@ class WorkspaceReminderTransformer(
 
 private fun buildWorkspacePrompt(workspace: WorkspaceEntity): String = buildString {
     appendLine("<workspace>")
-    appendLine("你可以访问一个名为「${workspace.name}」的持久化 Linux 工作区，运行在沙箱化的 proot rootfs 环境中。")
+    appendLine("- 你可以访问一个名为「${workspace.name}」的持久化 Linux 工作区，运行在沙箱化的 proot rootfs 环境中。")
     appendLine("- 工作区文件目录挂载在 `/workspace`，请将其作为你输出正文前的临时编辑工作目录。")
     appendLine("- 所有传递给 workspace 工具的路径必须是绝对路径，且位于 Rootfs 内部（例如 `/workspace/temp.txt`）。")
     appendLine("- 可用工具：")
-    appendLine("  - `workspace_read_file`：读取文件内容。")
-    appendLine("  - `workspace_write_file` / `workspace_edit_file`：创建文件，或对已有文件做精确编辑。")
-    appendLine("  - `workspace_shell`：执行 shell 命令（工作区文件目录挂载在 /workspace）。")
+    appendLine("- `workspace_read_file`：读取文件内容。")
+    appendLine("- `workspace_write_file` / `workspace_edit_file`：创建文件，或对已有文件做精确编辑。")
+    appendLine("- `workspace_shell`：执行 shell 命令（工作区文件目录挂载在 /workspace）。")
     appendLine("- 适合标准 Unix 工具处理的任务优先使用 `workspace_shell`，需要针对文件做精确修改时优先使用 `workspace_edit_file`。")
-    appendLine("- 每轮回复开始前，使用 `workspace_write_file` 覆写 `/workspace/temp.txt` 即会自动清空旧内容，无需额外清理步骤。建议的流程：写入草稿 → `workspace_edit_file` 修改 → `workspace_read_file` 读取最终内容输出。")
+    appendLine("- 每轮回复开始前，使用 `workspace_write_file` 覆写 `/workspace/temp.txt` 即会自动清空旧内容，无需额外清理步骤。")
     append("</workspace>")
 }
 

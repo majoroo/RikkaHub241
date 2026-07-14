@@ -277,17 +277,15 @@ private fun ProviderConfigureOpenAI(
         )
     }
 
-    Row(
+    OutlinedTextField(
+        value = provider.historyReasoningAnchor,
+        onValueChange = { onEdit(provider.copy(historyReasoningAnchor = it)) },
+        label = { Text(stringResource(R.string.setting_provider_page_include_history_reasoning)) },
+        placeholder = { Text(stringResource(R.string.setting_provider_page_history_reasoning_placeholder)) },
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(stringResource(R.string.setting_provider_page_include_history_reasoning))
-        Switch(
-            checked = provider.includeHistoryReasoning,
-            onCheckedChange = { onEdit(provider.copy(includeHistoryReasoning = it)) }
-        )
-    }
+        singleLine = false,
+        maxLines = 3,
+    )
 }
 
 @Composable

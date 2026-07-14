@@ -376,37 +376,39 @@ class GenerationHandler(
         workspaceCwd: String? = null,
     ) {
         val cleanMessages = buildList {
-            // 过往消息：Tool 和 Reasoning 不直接丢弃，而是压缩为文本摘要
-            // - 已执行的工具调用 → 保留一句话记录（如 "[工具: workspace_write_file → 成功]"）
-            // - 未执行的工具调用 → 丢弃（无关信息）
-            // - 思维链 → 丢弃（全文保留在最终回复的 Text 中）
-            val historical = messages.dropLast(1).map { msg ->
-                // 收集所有已执行工具的中文简称，形成调用链
-                val toolChain = msg.parts.filterIsInstance<UIMessagePart.Tool>()
-                    .filter { it.isExecuted }
-                    .map { TOOL_NAME_MAP[it.toolName] ?: it.toolName }
-                val chainSummary = if (toolChain.isNotEmpty()) {
-                    // 步间嵌入"思考"，末尾嵌入"输出正文"
-                    // [写入,编辑,读取] → [思考→写入→思考→编辑→思考→读取→思考→输出正文]
-                    val chainWithThinking = toolChain.flatMap { listOf("思考", it) } + listOf("思考", "输出正文")
-                    listOf(UIMessagePart.Text(chainWithThinking.joinToString("→")))
-                } else {
-                    emptyList()
-                }
-
+            // 过往消息：Tool 和 Reasoning 处理
+            // - 工具调用记录 → 已执行的工具保留简短链条，未执行的丢弃
+            // - 思维链 → 如有锚定词则注入，否则剥离
+            val anchor = (provider as? ProviderSetting.OpenAI)?.historyReasoningAnchor?.takeIf { it.isNotBlank() }
+            // 找到倒数第二条 ASSISTANT 消息，从此处到末尾全部保留
+            val assistantIndices = messages.mapIndexedNotNull { i, msg ->
+                if (msg.role == MessageRole.ASSISTANT) i else null
+            }
+            val keepFrom = if (assistantIndices.size >= 2) {
+                assistantIndices[assistantIndices.size - 2]
+            } else {
+                assistantIndices.lastOrNull() ?: 0
+            }
+            val toKeep = messages.drop(keepFrom)
+            val historical = messages.take(keepFrom).map { msg ->
                 val compressed = msg.parts.flatMap { part ->
                     when (part) {
                         is UIMessagePart.Tool -> emptyList()
-                        is UIMessagePart.Reasoning -> emptyList()
+                        is UIMessagePart.Reasoning -> {
+                            if (anchor != null) {
+                                listOf(UIMessagePart.Reasoning(reasoning = anchor))
+                            } else {
+                                emptyList()
+                            }
+                        }
                         else -> listOf(part)
                     }
                 }
-                // 将工具链摘要插入到压缩后的 parts 最前面
-                msg.copy(parts = chainSummary + compressed)
+                msg.copy(parts = compressed)
             }
             addAll(historical)
-            // 当前消息：保留全部 part（多步 Agent 循环需要读取 tool 调用/结果）
-            messages.lastOrNull()?.let { add(it) }
+            // 保留从倒数第二条 ASSISTANT 到末尾的全部消息（含工具调用/思维链）
+            toKeep.forEach { add(it) }
         }
 
         val internalMessages = buildList {

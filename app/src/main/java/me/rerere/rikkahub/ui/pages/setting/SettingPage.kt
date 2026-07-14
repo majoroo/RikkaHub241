@@ -70,7 +70,6 @@ import me.rerere.rikkahub.data.files.FilesManager
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.components.ui.Select
-import me.rerere.rikkahub.ui.components.ui.icons.DiscordIcon
 import me.rerere.rikkahub.ui.components.ui.icons.TencentQQIcon
 import me.rerere.rikkahub.ui.context.LocalNavController
 import me.rerere.rikkahub.ui.context.Navigator
@@ -314,17 +313,6 @@ fun SettingPage(vm: SettingVM = koinViewModel()) {
                                         onDismiss = { showQQGroupSheet = false }
                                     )
                                 }
-                                IconButton(
-                                    onClick = {
-                                        context.openUrl("https://discord.gg/9weBqxe5c4")
-                                    }
-                                ) {
-                                    Icon(
-                                        imageVector = DiscordIcon,
-                                        contentDescription = "Discord",
-                                        tint = MaterialTheme.colorScheme.secondary
-                                    )
-                                }
                             }
                         },
                         headlineContent = { Text(stringResource(R.string.setting_page_about)) },
@@ -421,9 +409,7 @@ private data class QQGroup(
 )
 
 private val QQ_GROUPS = listOf(
-    QQGroup("RikkaHub 一群", "4POE46u9e_zoy1TkNfWdCvueR9CKFJdk"),
-    QQGroup("RikkaHub 二群", "Qsm0whzbPsm1UyNpR683ulLyMZ2Pqrw0"),
-    QQGroup("RikkaHub 三群", "Qc9oP-9tXioZeQEvEvI2_owWtBAIx3lS"),
+    QQGroup("RP 交流群", "620095829"),
 )
 
 @Composable
@@ -447,7 +433,7 @@ private fun QQGroupBottomSheet(onDismiss: () -> Unit) {
                         )
                     },
                     modifier = Modifier.clickable {
-                        context.joinQQGroup(group.key)
+                        context.openUrl("https://qm.qq.com/cgi-bin/qm/qr?k=&group_code=620095829")
                         onDismiss()
                     }
                 )
